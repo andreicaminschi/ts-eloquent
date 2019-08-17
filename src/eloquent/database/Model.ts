@@ -5,6 +5,7 @@ import {IApiDriver} from "@/eloquent/api/IApiDriver";
 import {IApiResponse} from "@/eloquent/api/IApiResponse";
 import BelongsToRelation from "@/eloquent/database/relations/BelongsToRelation";
 import MorphManyRelation from "@/eloquent/database/relations/MorphManyRelation";
+import HasManyRelation from "@/eloquent/database/relations/HasManyRelation";
 
 export default abstract class Model {
     [key: string]: any;
@@ -73,6 +74,9 @@ export default abstract class Model {
                 return;
             } else if (Object.isMorphManyRelation(property_value)) {
                 (<MorphManyRelation<this, Model>>property_value).Repository.Load(passed_value);
+                return;
+            } else if (Object.isHasManyRelation(property_value)) {
+                (<HasManyRelation<this, Model>>property_value).Repository.Load(passed_value);
                 return;
             }
 

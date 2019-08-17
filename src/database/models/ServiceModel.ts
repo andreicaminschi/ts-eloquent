@@ -5,6 +5,8 @@ import Model from "@/eloquent/database/Model";
 import BelongsToRelation from "@/eloquent/database/relations/BelongsToRelation";
 import AttachmentModel from "@/database/models/AttachmentModel";
 import MorphManyRelation from "@/eloquent/database/relations/MorphManyRelation";
+import HasManyRelation from "@/eloquent/database/relations/HasManyRelation";
+import ServiceRequestModel from "@/database/models/ServiceRequestModel";
 
 export default class ServiceModel extends Model {
     GetModelName(): string {return "service";}
@@ -15,6 +17,7 @@ export default class ServiceModel extends Model {
     public LocationId: number = 0;
     public Location: BelongsToRelation<this, LocationModel> = new BelongsToRelation<this, LocationModel>({source: this, related: new LocationModel()});
     public Attachments: MorphManyRelation<this, AttachmentModel> = new MorphManyRelation<this, AttachmentModel>({source: this, related: new AttachmentModel(), morph_type: 'service-image'});
+    public Requests: HasManyRelation<this, ServiceRequestModel> = new HasManyRelation<this, ServiceRequestModel>({source: this, related: new ServiceRequestModel()});
 
 
     constructor(data?: Dictionary<any> | number) {
