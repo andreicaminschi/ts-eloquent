@@ -1,18 +1,20 @@
 import Model from "@/eloquent/database/Model";
 import Factory from "@/eloquent/database/Factory";
-import {Collection} from "@/eloquent/support/Collection";
 import {IApiDriver} from "@/eloquent/api/IApiDriver";
+import {List} from "@/eloquent/support/List";
+import {IApiResponse} from "@/eloquent/api/IApiResponse";
 
 
 export default class Repository<T extends Model> {
     private apiDriver: IApiDriver;
 
-    public Items: Collection<T>;
-
+    public Items: List<T>;
     private factory: Factory<T>;
+    get ResponseField() { return this.GetResponseField() || this.factory.Make().GetModelName() + 's';}
+    get Url() { return this.GetEndpoint() || this.factory.Make().GetModelName() + 's';}
 
     constructor(factory: Factory<T>) {
-        this.Items = new Collection<T>();
+        this.Items = new List<T>();
         this.factory = factory;
 
         this.apiDriver = this.factory.Make().GetApiDriver();
@@ -106,9 +108,32 @@ export default class Repository<T extends Model> {
     }
     //endregion
 
+    public GetEndpoint() {return '';}
+    public GetResponseField() {return '';}
     public async Get() {
-        let url = this.factory.Make().GetModelName() + 's';
-        return this.apiDriver.Get(url, this.Filters);
+        let instance = this.factory.Make();
+        return this.apiDriver.Get(this.Url, this.Filters).then((r: IApiResponse) => {
+            this.Load(r.GetData(this.ResponseField));
+        });
+    }
+
+    public Add(item: T) {
+        this.Items.Push(item);
+        return this;
+    }
+
+    public AddFromData(data: Dictionary<any>) {
+        this.Add(this.factory.Make(data));
+        return this;
+    }
+
+    private $is_new: boolean = true;
+    public IsNew() {return this.$is_new;}
+    public Load(data: Dictionary<any>[]) {
+        this.$is_new = false;
+        this.Items.Empty();
+        data.forEach((d: Dictionary<any>) => this.AddFromData(d));
+        return this;
     }
 
 }

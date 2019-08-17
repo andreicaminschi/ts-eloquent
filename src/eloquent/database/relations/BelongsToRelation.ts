@@ -6,7 +6,9 @@ export default class BelongsToRelation<SOURCE extends Model, RELATED extends Mod
     private related: RELATED;
 
     private local_key: string;
+    get LocalKey() {return this.local_key;}
     private foreign_key: string;
+    get ForeignKey() {return this.foreign_key;}
     public get Model() {return this.related;}
 
     constructor(params: { source: SOURCE, related: RELATED, local_key?: string, foreign_key?: string }) {

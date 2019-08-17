@@ -4,11 +4,14 @@ import Repository from "@/eloquent/database/Repository";
 import {IApiDriver} from "@/eloquent/api/IApiDriver";
 import {IApiResponse} from "@/eloquent/api/IApiResponse";
 import BelongsToRelation from "@/eloquent/database/relations/BelongsToRelation";
+import MorphManyRelation from "@/eloquent/database/relations/MorphManyRelation";
 
 export default abstract class Model {
     [key: string]: any;
 
     public $is_model = true;
+    public $primary_key = 'Id';
+    get PrimaryKey() {return this.$primary_key;}
 
     public abstract GetFactory(): Factory<Model>;
     public abstract GetRepository(): Repository<Model>;
@@ -68,6 +71,9 @@ export default abstract class Model {
             } else if (Object.isBelongsToRelation(property_value)) {
                 (<BelongsToRelation<this, Model>>property_value).Model.Load(passed_value);
                 return;
+            } else if (Object.isMorphManyRelation(property_value)) {
+                (<MorphManyRelation<this, Model>>property_value).Repository.Load(passed_value);
+                return;
             }
 
             this.SetPropertyValue(key, passed_value);
@@ -82,8 +88,9 @@ export default abstract class Model {
         this[key] = value;
         return this;
     }
+    public GetOriginalPropertyValue(key: string) {return this.$originalAttributes[key];}
 
-    private $originalAttributes: Dictionary<any> = {};
+    public $originalAttributes: Dictionary<any> = {};
     /**
      * Gets model property names.
      * Fields that start with a dollar sign are ignored
@@ -120,6 +127,19 @@ export default abstract class Model {
     }
     //endregion
 
+    //region Relations
+    private GetBelongsToRelations() {
+        let rel: BelongsToRelation<this, Model>[] = [];
+        this.GetOwnPropertyNames().forEach((key: string) => { if (Object.isBelongsToRelation(this[key])) rel.push(this[key]); })
+        return rel;
+    }
+
+    private GetMorphManyRelations() {
+        let rel: MorphManyRelation<this, Model>[] = [];
+        this.GetOwnPropertyNames().forEach((key: string) => { if (Object.isMorphManyRelation(this[key])) rel.push(this[key]); })
+        return rel;
+    }
+    //endregion
 
     /**
      * Retrieves data from the database
@@ -138,10 +158,34 @@ export default abstract class Model {
      * @constructor
      */
     public async Save() {
+        this.GetBelongsToRelations().forEach((rel: BelongsToRelation<this, Model>) => {
+            if (rel.Model.HasAttributeChanged(rel.Model.PrimaryKey))
+                this.SetPropertyValue(rel.LocalKey.snakeCaseToCamelCase(), rel.Model.GetPropertyValue(rel.Model.PrimaryKey));
+        });
+
+        // don't know what changed, so just put them all
+        let additional_data: Dictionary<any> = {};
+        this.GetMorphManyRelations().forEach((rel: MorphManyRelation<this, Model>) => {
+            additional_data[rel.RelationName] = rel.Repository.Items.ToJson().map((item: Model) => item[item.PrimaryKey])
+        });
+
+        let data = {
+            ...this.GetChangedAttributes(),
+            ...additional_data
+        };
+
         let url = this.GetEditUrl().replaceWithObjectProperties(this);
-        return this.IsNew()
-            ? this.GetApiDriver().Patch(url, this.GetChangedAttributes())
-            : this.GetApiDriver().Post(url, this.GetChangedAttributes());
+        let p = this.IsNew()
+            ? this.GetApiDriver().Post(url, data)
+            : this.GetApiDriver().Patch(url, data);
+        return await p.then((r: IApiResponse) => {
+            if (!r.IsSuccessful()) {
+                return r;
+            }
+            this.Load(r.GetData(this.GetModelName()));
+            return p;
+        })
+
 
     }
 }

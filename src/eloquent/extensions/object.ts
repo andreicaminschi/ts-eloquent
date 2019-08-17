@@ -37,11 +37,18 @@ interface ObjectConstructor {
      * @param o
      */
     isHasOneRelation(o: any): boolean;
+
     /**
      * Determines if the object is a BelongsTo relation
      * @param o
      */
     isBelongsToRelation(o: any): boolean;
+
+    /**
+     * Determines if the object is a MorphMany relation
+     * @param o
+     */
+    isMorphManyRelation(o: any): boolean;
 
     /**
      * Creates a new object from data, converting keys from snake_case to camelCase
@@ -63,6 +70,7 @@ Object.isRepository = function (o: any) { return Object.isObject(o) && Object.ke
 Object.isHasOneRelation = function (o: any) { return Object.isObject(o) && Object.keys(o).indexOf('$is_has_one_relation') !== -1;};
 
 Object.isBelongsToRelation = function (o: any) { return Object.isObject(o) && Object.keys(o).indexOf('$is_belongs_to_relation') !== -1;};
+Object.isMorphManyRelation = function (o: any) { return Object.isObject(o) && Object.keys(o).indexOf('$is_morph_many_relation') !== -1;};
 
 Object.createFromData = function (data: Dictionary<any>) {
     let result: Dictionary<any> = {};
