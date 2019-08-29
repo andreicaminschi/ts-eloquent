@@ -4,6 +4,7 @@ import Eloquent from "@/eloquent/config";
 import {group, group_collapsed, group_end, log} from "@/eloquent/log";
 import IDatabaseRecord from "@/eloquent/db/IDatabaseRecord";
 import {RECORD_INFO, RELATIONS} from "@/eloquent/symbols";
+import Repository from "@/eloquent/db/Repository";
 
 @EloquentClass
 export default class Model {
@@ -39,7 +40,9 @@ export default class Model {
     //endregion
 
     // region RELATIONS
-    protected $relations: Dictionary<any> = {};
+    protected relations: Dictionary<any> = {};
+    public SetRelationValue(key: string, value: Model | Repository<Model>) { this.relations = Object.assign({}, this.relations, {[key]: value}); }
+    public GetRelationValue(key: string) { return this.relations[key]; }
     static [RELATIONS](): Dictionary<any> { throw  this.$name + ".[RELATIONS] must be implemented in the child class"; }
     [RELATIONS](): Dictionary<any> { throw this.$name + ".[RELATIONS] must be implemented in the child class"; }
     get Relations() {return this[RELATIONS]();}
