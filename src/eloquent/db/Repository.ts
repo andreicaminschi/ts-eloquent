@@ -3,10 +3,12 @@ import {RECORD_INFO} from "@/eloquent/symbols";
 import IDatabaseRecord from "@/eloquent/db/IDatabaseRecord";
 import {IApiDriver} from "@/eloquent/api/IApiDriver";
 import Eloquent from "@/eloquent/config";
+import {EloquentClass} from "@/eloquent/decorators";
 
+@EloquentClass
 export default class Repository<T extends Model> {
     public $is_repository: boolean = true;
-    public Items: Dictionary<T> = {};
+    public Items: T[] = [];
 
     //region Record info
     static [RECORD_INFO](): IDatabaseRecord<Model> { throw this.$table + ".[RECORD_INFO] must be implemented in the child class"; }
@@ -36,25 +38,25 @@ export default class Repository<T extends Model> {
     /**
      * Filters that don't change
      */
-    public PersistentFilters: Dictionary<any> = {};
+    public $persistent_filters: Dictionary<any> = {};
 
     /**
      * Filters, duh
      */
-    public Filters: Dictionary<any> = {};
+    public $filters: Dictionary<any> = {};
 
     /**
      * Resets the filters, but not the persistent filters
      * @constructor
      */
     public ResetFilters() {
-        this.Filters = {};
+        this.$filters = {};
         return this;
     }
 
     public Where(field: string, operator: string, value: any, is_fixed_filter: boolean = false) {
         let str = `${field}-${operator}`;
-        if (value) is_fixed_filter ? this.PersistentFilters[str] = value : this.Filters[str] = value;
+        if (value) is_fixed_filter ? this.$persistent_filters[str] = value : this.$filters[str] = value;
         return this;
     }
 
@@ -75,28 +77,80 @@ export default class Repository<T extends Model> {
     public WhereContains(field: string, value: string, is_fixed_filter: boolean = false) { return this.Where(field, 'CONTAINS', value, is_fixed_filter) }
 
     public GetFilters(): Dictionary<any> {
-        return {
-            ...this.Filters,
-            ...this.PersistentFilters
+        let result: Dictionary<any> = {
+            ...this.$filters,
+            ...this.$persistent_filters
+        };
+        if (this.$row_count) {
+            if (this.$offset) result = {...result, ...{'limit': [this.$offset, this.$row_count].join(',')}}
+            else result = {...result, ...{'limit': this.$row_count}}
         }
+        return result;
     }
     //endregion
 
     constructor() {
     }
 
+    //region Pagination related.
+    protected $row_count: number = 0;
+    protected $offset: number = 0;
+    /**
+     * Skips a number of records
+     * @param count
+     * @constructor
+     */
+    public Skip(count: number) {
+        this.$offset = count;
+        return this;
+    }
+
+    /**
+     * Limits the number of records returned
+     * @param count
+     * @constructor
+     */
+    public Take(count: number) {
+        this.$row_count = count;
+        return this;
+    }
+
+    /**
+     * Limits the number of records returned
+     * @param count
+     * @constructor
+     */
+    public Limit(count: number) {return this.Take(count)}
+
+    /**
+     * Gets the records for the specified page
+     * The page counting starts at 1
+     * @param page
+     * @param per_page
+     * @constructor
+     */
+    public ForPage(page: number, per_page: number = 15) {
+        this.Skip((page - 1) * per_page);
+        this.Take(per_page);
+        return this;
+    }
+    //endregion
+
     //region Methods
     public async Get(append?: string) {
         let parts = [this.RecordInfo.Table];
-        if (append) parts.push(append)
+        if (append) parts.push(append);
         let url = parts.join('/');
 
+        let items = [];
         let r = await this.Connection.Get(url, this.GetFilters());
         for (let row of r.GetData(this.$table)) {
             let model = this.RecordInfo.Make(row);
-            this.Items = Object.assign({}, this.Items, {[model.GetAttribute(model.$primary_key)]: model});
+            items.push(model);
         }
+        this.Items = items;
     }
+
     //endregion
 
 }
