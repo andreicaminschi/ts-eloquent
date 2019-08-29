@@ -1,4 +1,4 @@
-import IApiResponse = API.IApiResponse;
+import {IApiResponse} from "@/eloquent/api/IApiResponse";
 
 export class ApiResponse implements IApiResponse {
     private readonly success: boolean;

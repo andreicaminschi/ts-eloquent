@@ -69,12 +69,11 @@ Object.hasMethod = function (o: any, m: string) { return Object.isObject(o) && t
 
 Object.hasProperty = function (o: any, p: string) { return Object.isObject(o) && typeof o[p] === "undefined";};
 
-Object.isModel = function (o: any) { return Object.isObject(o) && Object.keys(o).indexOf('$is_model') !== -1;};
+Object.isModel = function (o: any) { return Object.isObject(o) && typeof o['$is_model'] !== "undefined";};
 
-Object.isRepository = function (o: any) { return Object.isObject(o) && Object.keys(o).indexOf('$is_repository') !== -1;};
+Object.isRepository = function (o: any) { return Object.isObject(o) && typeof o['$is_repository'] !== "undefined";};
 
-Object.isHasOneRelation = function (o: any) { return Object.isObject(o) && Object.keys(o).indexOf('$is_has_one_relation') !== -1;};
-
+Object.isHasOneRelation = function (o: any) { return Object.isObject(o) && typeof o['$is_has_one_relation'] !== "undefined";};
 Object.isBelongsToRelation = function (o: any) { return Object.isObject(o) && Object.keys(o).indexOf('$is_belongs_to_relation') !== -1;};
 Object.isMorphManyRelation = function (o: any) { return Object.isObject(o) && Object.keys(o).indexOf('$is_morph_many_relation') !== -1;};
 Object.isHasManyRelation = function (o: any) { return Object.isObject(o) && Object.keys(o).indexOf('$is_has_many_relation') !== -1;};

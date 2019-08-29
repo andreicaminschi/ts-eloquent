@@ -6,7 +6,8 @@ import './extensions/string';
 import './extensions/array';
 import './extensions/object';
 import './extensions/date';
-import Model from "@/eloquent/database/Model";
+import './log';
+import Eloquent from "@/eloquent/config";
 
 declare module 'vue/types/vue' {
 
@@ -21,5 +22,6 @@ declare module 'vue/types/vue' {
 
 export default function EloquentPlugin(Vue: typeof _Vue, options?: any): void {
     Vue.$api = Vue.prototype.$api = new ApiDriver('https://api.serj.ro', '1.0');
-    Model.SetApiDriver(Vue.$api);
+    Eloquent.SetDefaultApiDriver(Vue.$api);
+    Eloquent.SetDebugMode(true);
 }
